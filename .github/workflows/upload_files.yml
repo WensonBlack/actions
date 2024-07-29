@@ -12,15 +12,30 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: google-github-actions/setup-gcloud@master
+        if: github.ref == 'refs/heads/main'
         with:
-          project_id: ${{ github.ref == 'refs/heads/main' ? secrets.GCP_PROJECT_ID_MAIN : secrets.GCP_PROJECT_ID_DEV }}
-          service_account_key: ${{ github.ref == 'refs/heads/main' ? secrets.GCP_SA_KEY_MAIN : secrets.GCP_SA_KEY_DEV }}
+          project_id: ${{ secrets.GCP_PROJECT_ID_MAIN }}
+          service_account_key: ${{ secrets.GCP_SA_KEY_MAIN }}
           export_default_credentials: true
+      - uses: google-github-actions/setup-gcloud@master
+        if: github.ref == 'refs/heads/dev'
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
+          service_account_key: ${{ secrets.GCP_SA_KEY_DEV }}
+          export_default_credentials: true
+
       - name: create zip
         working-directory: ./
         run: zip -r ./help_center.zip ./gitbook/renewal/ja/
-      - id: upload-file
+      - id: upload-file-main
+        if: github.ref == 'refs/heads/main'
         uses: google-github-actions/upload-cloud-storage@main
         with:
           path: ./help_center.zip
-          destination: ${{ github.ref == 'refs/heads/main' ? secrets.GCP_BUCKET_MAIN : secrets.GCP_BUCKET_DEV }}
+          destination: ${{ secrets.GCP_BUCKET_MAIN }}
+      - id: upload-file-dev
+        if: github.ref == 'refs/heads/dev'
+        uses: google-github-actions/upload-cloud-storage@main
+        with:
+          path: ./help_center.zip
+          destination: ${{ secrets.GCP_BUCKET_DEV }}
